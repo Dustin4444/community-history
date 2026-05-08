@@ -1,6 +1,6 @@
 {
   "config": {
-    "maxCapacity": 10,
+    "maxCapacity": 1,
     "minCapacity": 0,
     "launchConfigs": [
       {
@@ -12,7 +12,7 @@
             "autoDelete": true,
             "initializeParams": {
               "diskSizeGb": 60,
-              "sourceImage": "projects/community-tc-workers/global/images/generic-worker-ubuntu-24-04-staging-ckjlklappqcmtsiynmli"
+              "sourceImage": "projects/community-tc-workers/global/images/generic-worker-ubuntu-24-04-staging-iuujjhskyujdtccoemka"
             }
           }
         ],
@@ -26,7 +26,6 @@
         "workerConfig": {
           "genericWorker": {
             "config": {
-              "capacity": 2,
               "d2gConfig": {
                 "enableD2G": true
               },
@@ -48,8 +47,8 @@
           }
         },
         "workerManager": {
-          "launchConfigId": "lc-cb047d28d7193aca1af4",
-          "capacityPerInstance": 2
+          "launchConfigId": "lc-a7f192832024100b87b5",
+          "capacityPerInstance": 1
         },
         "networkInterfaces": [
           {
@@ -70,7 +69,7 @@
             "autoDelete": true,
             "initializeParams": {
               "diskSizeGb": 60,
-              "sourceImage": "projects/community-tc-workers/global/images/generic-worker-ubuntu-24-04-staging-ckjlklappqcmtsiynmli"
+              "sourceImage": "projects/community-tc-workers/global/images/generic-worker-ubuntu-24-04-staging-iuujjhskyujdtccoemka"
             }
           }
         ],
@@ -84,7 +83,6 @@
         "workerConfig": {
           "genericWorker": {
             "config": {
-              "capacity": 2,
               "d2gConfig": {
                 "enableD2G": true
               },
@@ -106,124 +104,8 @@
           }
         },
         "workerManager": {
-          "launchConfigId": "lc-74dbd6f18e769af2121a",
-          "capacityPerInstance": 2
-        },
-        "networkInterfaces": [
-          {
-            "accessConfigs": [
-              {
-                "type": "ONE_TO_ONE_NAT"
-              }
-            ]
-          }
-        ]
-      },
-      {
-        "zone": "us-east1-b",
-        "disks": [
-          {
-            "boot": true,
-            "type": "PERSISTENT",
-            "autoDelete": true,
-            "initializeParams": {
-              "diskSizeGb": 60,
-              "sourceImage": "projects/community-tc-workers/global/images/generic-worker-ubuntu-24-04-staging-ckjlklappqcmtsiynmli"
-            }
-          }
-        ],
-        "region": "us-east1",
-        "scheduling": {
-          "onHostMaintenance": "terminate",
-          "provisioningModel": "SPOT",
-          "instanceTerminationAction": "DELETE"
-        },
-        "machineType": "zones/us-east1-b/machineTypes/n2-standard-4",
-        "workerConfig": {
-          "genericWorker": {
-            "config": {
-              "capacity": 2,
-              "d2gConfig": {
-                "enableD2G": true
-              },
-              "wstAudience": "communitytc",
-              "wstServerURL": "https://wstunnel.communitytc.taskcluster.prod.webservices.mozgcp.net",
-              "headlessTasks": true,
-              "idleTimeoutSecs": 3600,
-              "enableInteractive": true,
-              "workerTypeMetadata": {
-                "machine-setup": {
-                  "script": "https://raw.githubusercontent.com/taskcluster/community-tc-config/f6329c81d00bd92b5308ad6f7148dca7d5b81273/imagesets/generic-worker-ubuntu-24-04-staging/bootstrap.sh",
-                  "maintainer": "taskcluster-notifications+workers@mozilla.com"
-                }
-              },
-              "shutdownMachineOnIdle": true,
-              "ed25519SigningKeyLocation": "/etc/generic-worker/ed25519_key",
-              "shutdownMachineOnInternalError": false
-            }
-          }
-        },
-        "workerManager": {
-          "launchConfigId": "lc-3e007f70f576adcb92b2",
-          "capacityPerInstance": 2
-        },
-        "networkInterfaces": [
-          {
-            "accessConfigs": [
-              {
-                "type": "ONE_TO_ONE_NAT"
-              }
-            ]
-          }
-        ]
-      },
-      {
-        "zone": "us-east4-b",
-        "disks": [
-          {
-            "boot": true,
-            "type": "PERSISTENT",
-            "autoDelete": true,
-            "initializeParams": {
-              "diskSizeGb": 60,
-              "sourceImage": "projects/community-tc-workers/global/images/generic-worker-ubuntu-24-04-staging-ckjlklappqcmtsiynmli"
-            }
-          }
-        ],
-        "region": "us-east4",
-        "scheduling": {
-          "onHostMaintenance": "terminate",
-          "provisioningModel": "SPOT",
-          "instanceTerminationAction": "DELETE"
-        },
-        "machineType": "zones/us-east4-b/machineTypes/n2-standard-4",
-        "workerConfig": {
-          "genericWorker": {
-            "config": {
-              "capacity": 2,
-              "d2gConfig": {
-                "enableD2G": true
-              },
-              "wstAudience": "communitytc",
-              "wstServerURL": "https://wstunnel.communitytc.taskcluster.prod.webservices.mozgcp.net",
-              "headlessTasks": true,
-              "idleTimeoutSecs": 3600,
-              "enableInteractive": true,
-              "workerTypeMetadata": {
-                "machine-setup": {
-                  "script": "https://raw.githubusercontent.com/taskcluster/community-tc-config/f6329c81d00bd92b5308ad6f7148dca7d5b81273/imagesets/generic-worker-ubuntu-24-04-staging/bootstrap.sh",
-                  "maintainer": "taskcluster-notifications+workers@mozilla.com"
-                }
-              },
-              "shutdownMachineOnIdle": true,
-              "ed25519SigningKeyLocation": "/etc/generic-worker/ed25519_key",
-              "shutdownMachineOnInternalError": false
-            }
-          }
-        },
-        "workerManager": {
-          "launchConfigId": "lc-1d0b7d910a9412bf58ae",
-          "capacityPerInstance": 2
+          "launchConfigId": "lc-2245bda5a8cf42a3ab0d",
+          "capacityPerInstance": 1
         },
         "networkInterfaces": [
           {
@@ -244,7 +126,7 @@
             "autoDelete": true,
             "initializeParams": {
               "diskSizeGb": 60,
-              "sourceImage": "projects/community-tc-workers/global/images/generic-worker-ubuntu-24-04-staging-ckjlklappqcmtsiynmli"
+              "sourceImage": "projects/community-tc-workers/global/images/generic-worker-ubuntu-24-04-staging-iuujjhskyujdtccoemka"
             }
           }
         ],
@@ -258,7 +140,6 @@
         "workerConfig": {
           "genericWorker": {
             "config": {
-              "capacity": 2,
               "d2gConfig": {
                 "enableD2G": true
               },
@@ -280,8 +161,8 @@
           }
         },
         "workerManager": {
-          "launchConfigId": "lc-7c6dbcafd719bc068583",
-          "capacityPerInstance": 2
+          "launchConfigId": "lc-2a6ec9b08f1bcd945ec4",
+          "capacityPerInstance": 1
         },
         "networkInterfaces": [
           {
@@ -302,7 +183,7 @@
             "autoDelete": true,
             "initializeParams": {
               "diskSizeGb": 60,
-              "sourceImage": "projects/community-tc-workers/global/images/generic-worker-ubuntu-24-04-staging-ckjlklappqcmtsiynmli"
+              "sourceImage": "projects/community-tc-workers/global/images/generic-worker-ubuntu-24-04-staging-iuujjhskyujdtccoemka"
             }
           }
         ],
@@ -316,7 +197,6 @@
         "workerConfig": {
           "genericWorker": {
             "config": {
-              "capacity": 2,
               "d2gConfig": {
                 "enableD2G": true
               },
@@ -338,8 +218,65 @@
           }
         },
         "workerManager": {
-          "launchConfigId": "lc-c2cf837d3e4ec6c6e9f6",
-          "capacityPerInstance": 2
+          "launchConfigId": "lc-aec584f50991d6e88e7b",
+          "capacityPerInstance": 1
+        },
+        "networkInterfaces": [
+          {
+            "accessConfigs": [
+              {
+                "type": "ONE_TO_ONE_NAT"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "zone": "us-east1-b",
+        "disks": [
+          {
+            "boot": true,
+            "type": "PERSISTENT",
+            "autoDelete": true,
+            "initializeParams": {
+              "diskSizeGb": 60,
+              "sourceImage": "projects/community-tc-workers/global/images/generic-worker-ubuntu-24-04-staging-iuujjhskyujdtccoemka"
+            }
+          }
+        ],
+        "region": "us-east1",
+        "scheduling": {
+          "onHostMaintenance": "terminate",
+          "provisioningModel": "SPOT",
+          "instanceTerminationAction": "DELETE"
+        },
+        "machineType": "zones/us-east1-b/machineTypes/n2-standard-4",
+        "workerConfig": {
+          "genericWorker": {
+            "config": {
+              "d2gConfig": {
+                "enableD2G": true
+              },
+              "wstAudience": "communitytc",
+              "wstServerURL": "https://wstunnel.communitytc.taskcluster.prod.webservices.mozgcp.net",
+              "headlessTasks": true,
+              "idleTimeoutSecs": 3600,
+              "enableInteractive": true,
+              "workerTypeMetadata": {
+                "machine-setup": {
+                  "script": "https://raw.githubusercontent.com/taskcluster/community-tc-config/f6329c81d00bd92b5308ad6f7148dca7d5b81273/imagesets/generic-worker-ubuntu-24-04-staging/bootstrap.sh",
+                  "maintainer": "taskcluster-notifications+workers@mozilla.com"
+                }
+              },
+              "shutdownMachineOnIdle": true,
+              "ed25519SigningKeyLocation": "/etc/generic-worker/ed25519_key",
+              "shutdownMachineOnInternalError": false
+            }
+          }
+        },
+        "workerManager": {
+          "launchConfigId": "lc-657305d35e5fba387cb7",
+          "capacityPerInstance": 1
         },
         "networkInterfaces": [
           {
@@ -360,7 +297,7 @@
             "autoDelete": true,
             "initializeParams": {
               "diskSizeGb": 60,
-              "sourceImage": "projects/community-tc-workers/global/images/generic-worker-ubuntu-24-04-staging-ckjlklappqcmtsiynmli"
+              "sourceImage": "projects/community-tc-workers/global/images/generic-worker-ubuntu-24-04-staging-iuujjhskyujdtccoemka"
             }
           }
         ],
@@ -374,7 +311,6 @@
         "workerConfig": {
           "genericWorker": {
             "config": {
-              "capacity": 2,
               "d2gConfig": {
                 "enableD2G": true
               },
@@ -396,8 +332,8 @@
           }
         },
         "workerManager": {
-          "launchConfigId": "lc-6a6cd41878707254a1f5",
-          "capacityPerInstance": 2
+          "launchConfigId": "lc-c8346ca18e7a466f6235",
+          "capacityPerInstance": 1
         },
         "networkInterfaces": [
           {
@@ -418,7 +354,7 @@
             "autoDelete": true,
             "initializeParams": {
               "diskSizeGb": 60,
-              "sourceImage": "projects/community-tc-workers/global/images/generic-worker-ubuntu-24-04-staging-ckjlklappqcmtsiynmli"
+              "sourceImage": "projects/community-tc-workers/global/images/generic-worker-ubuntu-24-04-staging-iuujjhskyujdtccoemka"
             }
           }
         ],
@@ -432,7 +368,6 @@
         "workerConfig": {
           "genericWorker": {
             "config": {
-              "capacity": 2,
               "d2gConfig": {
                 "enableD2G": true
               },
@@ -454,8 +389,8 @@
           }
         },
         "workerManager": {
-          "launchConfigId": "lc-a3fbbc20ecaabf94d1cd",
-          "capacityPerInstance": 2
+          "launchConfigId": "lc-8c94b6721ff0f5c6d8bd",
+          "capacityPerInstance": 1
         },
         "networkInterfaces": [
           {
@@ -476,7 +411,7 @@
             "autoDelete": true,
             "initializeParams": {
               "diskSizeGb": 60,
-              "sourceImage": "projects/community-tc-workers/global/images/generic-worker-ubuntu-24-04-staging-ckjlklappqcmtsiynmli"
+              "sourceImage": "projects/community-tc-workers/global/images/generic-worker-ubuntu-24-04-staging-iuujjhskyujdtccoemka"
             }
           }
         ],
@@ -490,7 +425,6 @@
         "workerConfig": {
           "genericWorker": {
             "config": {
-              "capacity": 2,
               "d2gConfig": {
                 "enableD2G": true
               },
@@ -512,8 +446,65 @@
           }
         },
         "workerManager": {
-          "launchConfigId": "lc-f6b7034f02805057cd1f",
-          "capacityPerInstance": 2
+          "launchConfigId": "lc-d56a2a9653e89b45ca32",
+          "capacityPerInstance": 1
+        },
+        "networkInterfaces": [
+          {
+            "accessConfigs": [
+              {
+                "type": "ONE_TO_ONE_NAT"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "zone": "us-east4-b",
+        "disks": [
+          {
+            "boot": true,
+            "type": "PERSISTENT",
+            "autoDelete": true,
+            "initializeParams": {
+              "diskSizeGb": 60,
+              "sourceImage": "projects/community-tc-workers/global/images/generic-worker-ubuntu-24-04-staging-iuujjhskyujdtccoemka"
+            }
+          }
+        ],
+        "region": "us-east4",
+        "scheduling": {
+          "onHostMaintenance": "terminate",
+          "provisioningModel": "SPOT",
+          "instanceTerminationAction": "DELETE"
+        },
+        "machineType": "zones/us-east4-b/machineTypes/n2-standard-4",
+        "workerConfig": {
+          "genericWorker": {
+            "config": {
+              "d2gConfig": {
+                "enableD2G": true
+              },
+              "wstAudience": "communitytc",
+              "wstServerURL": "https://wstunnel.communitytc.taskcluster.prod.webservices.mozgcp.net",
+              "headlessTasks": true,
+              "idleTimeoutSecs": 3600,
+              "enableInteractive": true,
+              "workerTypeMetadata": {
+                "machine-setup": {
+                  "script": "https://raw.githubusercontent.com/taskcluster/community-tc-config/f6329c81d00bd92b5308ad6f7148dca7d5b81273/imagesets/generic-worker-ubuntu-24-04-staging/bootstrap.sh",
+                  "maintainer": "taskcluster-notifications+workers@mozilla.com"
+                }
+              },
+              "shutdownMachineOnIdle": true,
+              "ed25519SigningKeyLocation": "/etc/generic-worker/ed25519_key",
+              "shutdownMachineOnInternalError": false
+            }
+          }
+        },
+        "workerManager": {
+          "launchConfigId": "lc-62deb42ed3533c57308f",
+          "capacityPerInstance": 1
         },
         "networkInterfaces": [
           {
@@ -534,7 +525,7 @@
             "autoDelete": true,
             "initializeParams": {
               "diskSizeGb": 60,
-              "sourceImage": "projects/community-tc-workers/global/images/generic-worker-ubuntu-24-04-staging-ckjlklappqcmtsiynmli"
+              "sourceImage": "projects/community-tc-workers/global/images/generic-worker-ubuntu-24-04-staging-iuujjhskyujdtccoemka"
             }
           }
         ],
@@ -548,7 +539,6 @@
         "workerConfig": {
           "genericWorker": {
             "config": {
-              "capacity": 2,
               "d2gConfig": {
                 "enableD2G": true
               },
@@ -570,8 +560,8 @@
           }
         },
         "workerManager": {
-          "launchConfigId": "lc-b420995ddaad7caf38e2",
-          "capacityPerInstance": 2
+          "launchConfigId": "lc-935e34a44bcdcf1d18e2",
+          "capacityPerInstance": 1
         },
         "networkInterfaces": [
           {
@@ -589,7 +579,7 @@
   "currentCapacity": 0,
   "description": "*DO NOT EDIT* - This resource is configured automatically.\n\nWorkers for taskcluster",
   "emailOnError": true,
-  "lastModified": "2026-05-01T15:59:37.425Z",
+  "lastModified": "2026-05-05T13:29:45.281Z",
   "owner": "taskcluster-notifications+workers@mozilla.com",
   "providerId": "community-tc-workers-google",
   "requestedCapacity": 0,
