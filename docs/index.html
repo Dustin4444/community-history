@@ -118,8 +118,17 @@
     const historyUrl = `${window.location.pathname}history.json`
     const versionCollator = new Intl.Collator('en', { numeric: true, sensitivity: 'base' })
 
+    function compareVersionsDescending(a, b) {
+      const aIsVersion = /^v?\d/i.test(a.trim())
+      const bIsVersion = /^v?\d/i.test(b.trim())
+      if (aIsVersion !== bIsVersion) return aIsVersion ? -1 : 1
+      return versionCollator.compare(b, a)
+    }
+
     function versionSortKey(version) {
-      return version.trim().toLowerCase().replace(/\d+/g, part => part.padStart(12, '0'))
+      const value = version.trim().toLowerCase()
+      const prefix = /^v?\d/i.test(value) ? '1:' : '0:'
+      return prefix + value.replace(/\d+/g, part => part.padStart(12, '0'))
     }
 
     function makeTableSortable(table) {
@@ -153,7 +162,9 @@
             if (!columns.includes(k)) columns.push(k)
           })
         })
-        columns = columns.sort((a, b) => a.localeCompare(b))
+        columns = columns.sort((a, b) => prop === 'versions'
+          ? compareVersionsDescending(a, b)
+          : a.localeCompare(b))
 
         let table = `<table><thead><tr><th>Date</th>${columns.map(k => `<th>${k || 'unknown'}</th>`).join('')}</thead><tbody>`
         dates.forEach(date => {
@@ -186,7 +197,7 @@
 
       // get unique versions
       const allVersions = [... new Set(dates.map(date => Object.keys(data[date].versions)).flat())]
-        .sort((a, b) => versionCollator.compare(a, b))
+        .sort(compareVersionsDescending)
       const versionTraces = allVersions.map((version) => ({
         x: dates,
         y: dates.map(date => data[date].versions[version] || 0),
