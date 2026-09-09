@@ -4,6 +4,8 @@
 //   - a crosshair highlight: hovering a cell highlights its row and its column
 //   - sticky header row(s) and sticky first column, for tables big enough to
 //     need scrolling (see thresholds below)
+//   - a filter box above long tables, matching whitespace-separated terms
+//     against each row's text
 //
 // Stickiness is relative to the viewport: the page stays the only scroller, so
 // wide tables scroll the page horizontally rather than a nested container.
@@ -18,6 +20,7 @@
 
 const STICKY_MIN_ROWS = 12
 const STICKY_MIN_COLUMNS = 8
+const FILTER_MIN_ROWS = 25
 const COLUMN_CLASS = 'tu-col'
 
 // table -> (column index -> cells). Cached because column membership survives
@@ -103,6 +106,45 @@ function addSticky(table) {
   })
 }
 
+
+function addRowFilter(table) {
+  const rows = [...(table.tBodies[0]?.rows || [])]
+
+  const bar = document.createElement('div')
+  bar.className = 'tu-filter'
+  const input = document.createElement('input')
+  input.type = 'search'
+  input.placeholder = `Filter ${rows.length} rows...`
+  input.setAttribute('aria-label', 'Filter table rows')
+  const count = document.createElement('span')
+  count.className = 'tu-filter-count'
+  bar.append(input, count)
+  table.parentNode.insertBefore(bar, table)
+
+  // Row text is read once. It never changes, and re-reading textContent for
+  // every row on every keystroke is the expensive part of filtering. Rows keep
+  // their own haystack, so sorting the table does not invalidate this.
+  const haystacks = rows.map(row => row.textContent.toLowerCase())
+
+  let frame = 0
+  const apply = () => {
+    frame = 0
+    const terms = input.value.toLowerCase().split(/\s+/).filter(Boolean)
+    let shown = 0
+    rows.forEach((row, i) => {
+      const match = terms.every(term => haystacks[i].includes(term))
+      row.hidden = !match
+      if (match) shown++
+    })
+    count.textContent = terms.length ? `${shown} of ${rows.length} rows` : ''
+  }
+
+  // One DOM pass per frame, however fast the typing.
+  input.addEventListener('input', () => {
+    if (!frame) frame = requestAnimationFrame(apply)
+  })
+}
+
 function columnCount(table) {
   const row = table.tHead?.rows[table.tHead.rows.length - 1] || table.rows[0]
   return row ? row.cells.length : 0
@@ -116,5 +158,6 @@ export function enhanceTables(root = document) {
     if (rows >= STICKY_MIN_ROWS || columnCount(table) >= STICKY_MIN_COLUMNS) {
       addSticky(table)
     }
+    if (rows >= FILTER_MIN_ROWS) addRowFilter(table)
   })
 }

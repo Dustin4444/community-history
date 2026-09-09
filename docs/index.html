@@ -74,6 +74,67 @@
       width: 70%;
     }
 
+    .source {
+      margin: 0 0 10px;
+      color: #656d76;
+      font-size: 14px;
+    }
+
+    .source span + span::before {
+      content: " · ";
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 16px;
+      margin: 12px 0;
+      font-size: 14px;
+    }
+
+    .controls label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .controls .hint,
+    .tu-filter-count {
+      color: #656d76;
+    }
+
+    .error {
+      padding: 12px 16px;
+      border: 1px solid #ffb8b8;
+      border-left-width: 4px;
+      background: #fff5f5;
+    }
+
+    .tu-filter {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 12px 0 6px;
+      font-size: 14px;
+    }
+
+    .tu-filter input {
+      padding: 5px 10px;
+      min-width: 260px;
+      border: 1px solid #d0d7de;
+      border-radius: 6px;
+      font: inherit;
+    }
+
+    /* Cell shading by pool count. Declared before the hover rules below so the
+       crosshair still reads clearly over a shaded column. */
+    .tu-heat-1 { background-color: #f2f9f4; }
+    .tu-heat-2 { background-color: #ddefe2; }
+    .tu-heat-3 { background-color: #c2e2cb; }
+    .tu-heat-4 { background-color: #a3d4b1; }
+    .tu-heat-5 { background-color: #7cc294; }
+
     /* Big-table helpers, driven by the .tu-* classes table-utils.js adds. */
 
     /* github-markdown-css renders tables as display:block with overflow:auto,
@@ -142,10 +203,16 @@
           <li><a href="#script-worker">Script Worker</a></li>
           <li><a href="#no-artifacts-found-1">No artifacts</a></li>
           <li><a href="#version-not-determined-2">Version not determined</a></li>
-          <li><a href="#history">History</a></li>
+          <li><a href="#history">History</a>
+            <ul>
+              <li><a href="#history-implementations">Implementations</a></li>
+              <li><a href="#history-versions">Versions</a></li>
+            </ul>
+          </li>
           <li><a href="#graphs">Graphs</a></li>
         </ul>
       </div>
+      <p class="source" id="source"></p>
       <p class="info"><strong>Disclaimer:</strong> Values below represent <strong>worker pools</strong>.<br/>
         They do not contain number of unique imagesets used for those pools, or how many tasks are being executed by those worker pools.</p>
       <div class="content" id="content"></div>
@@ -153,6 +220,7 @@
       <div class="graphs" id="graphs">
         <p class="info"><strong>Disclaimer:</strong> Those values represent number of worker pools, and not number of
           workers. This also doesn't include total number of tasks run on those worker pools.</p>
+        <p class="info" id="graph-status">Loading charts&hellip;</p>
         <div id="graph-implementations"></div>
         <div id="graph-versions"></div>
       </div>
@@ -164,16 +232,36 @@
     integrity="sha512-LhccdVNGe2QMEfI3x4DVV3ckMRe36TfydKss6mJpdHjNFiV07dFpS2xzeZedptKZrwxfICJpez09iNioiSZ3hA=="
     crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script src="https://cdn.jsdelivr.net/gh/tofsjonas/sortable/sortable.min.js"></script>
-  <script src="https://cdn.plot.ly/plotly-2.18.0.min.js"></script>
   <script type="module">
     import { enhanceTables } from './table-utils.js'
 
-    // This should work for both https://taskcluster.github.io/community-history/ and https://taskcluster.github.io/mozilla-history/
-    let basePath = String(window.location.pathname)
-    if (!basePath.includes('-history')) basePath = '/mozilla-history/'
-    const readmeUrl = `https://raw.githubusercontent.com/taskcluster${basePath}master/WorkerVersions/README.md`
-    const historyUrl = `${window.location.pathname}history.json`
+    // Resolve against the directory, so both /<repo>/ and /<repo>/index.html work.
+    const baseUrl = new URL('.', window.location.href)
+    // On GitHub Pages the first path segment is the repository name; fall back
+    // to mozilla-history when served from a bare host (local preview).
+    const repo = baseUrl.pathname.split('/').filter(Boolean)[0] || 'mozilla-history'
+    const readmeUrl = `https://raw.githubusercontent.com/taskcluster/${repo}/master/WorkerVersions/README.md`
+    const historyUrl = new URL('history.json', baseUrl)
+    const plotlyUrl = 'https://cdn.plot.ly/plotly-2.18.0.min.js'
+
+    // Columns are sorted newest version first; everything past this many is
+    // folded into a single "older" column so the table stays readable.
+    const MAX_VERSION_COLUMNS = 25
+    // Versions charted individually; the rest are summed into one trace.
+    const CHARTED_VERSIONS = 10
+    const HEAT_STEPS = 5
+    const RANGES = [
+      { id: '1y', label: 'Last year', days: 365 },
+      { id: '3y', label: 'Last 3 years', days: 3 * 365 },
+      { id: 'all', label: 'Everything', days: Infinity },
+    ]
+
     const versionCollator = new Intl.Collator('en', { numeric: true, sensitivity: 'base' })
+
+    let history = null
+    let rangeId = '1y'
+    let showAllVersions = false
+    let plotly = null
 
     function compareVersionsDescending(a, b) {
       const aIsVersion = /^v?\d/i.test(a.trim())
@@ -200,95 +288,256 @@
       table.classList.add('sortable')
     }
 
+    async function fetchOk(url) {
+      const res = await fetch(url)
+      if (!res.ok) throw new Error(`${res.status} ${res.statusText} for ${url}`)
+      return res
+    }
+
+    function showError(container, what, error) {
+      console.error(`Failed to load ${what}`, error)
+      const el = document.createElement('p')
+      el.className = 'error'
+      el.innerHTML = `<strong>Could not load ${what}.</strong> ${error.message}` +
+        ' &mdash; try reloading; the rest of the page is unaffected.'
+      container.replaceChildren(el)
+    }
+
+    function loadScript(src) {
+      return new Promise((resolve, reject) => {
+        const el = document.createElement('script')
+        el.src = src
+        el.onload = resolve
+        el.onerror = () => reject(new Error(`could not load ${src}`))
+        document.head.appendChild(el)
+      })
+    }
+
+    function renderSource() {
+      const repoUrl = `https://github.com/taskcluster/${repo}`
+      document.getElementById('source').innerHTML =
+        `<span>Source: <a href="${repoUrl}">taskcluster/${repo}</a></span>` +
+        `<span>Report: <a href="${repoUrl}/blob/master/WorkerVersions/README.md">WorkerVersions/README.md</a></span>` +
+        `<span>Raw data: <a href="${historyUrl}">history.json</a></span>` +
+        `<span id="source-updated"></span>`
+    }
+
+    function renderSourceUpdated(data) {
+      const dates = Object.keys(data).sort()
+      document.getElementById('source-updated').textContent =
+        `${dates.length} weekly snapshots, ${dates[0]} to ${dates[dates.length - 1]}`
+    }
+
     async function loadReadme() {
-      const res = await (await fetch(readmeUrl)).text()
+      const text = await (await fetchOk(readmeUrl)).text()
       showdown.setFlavor('github');
       document.getElementById('content').innerHTML = (new showdown.Converter({
         ghCompatibleHeaderId: true,
         tables: true,
-      })).makeHtml(res)
+      })).makeHtml(text)
     }
-    function renderHistoryTables(data) {
-      const dates = Object.keys(data).sort((a, b) => b.localeCompare(a)) // dates in reverse order
 
-      const tableByDate = (field, prop) => {
-        let columns = []
-        dates.forEach(date => {
-          const dict = data[date][prop]
-          Object.keys(dict).forEach(k => {
-            if (!columns.includes(k)) columns.push(k)
-          })
-        })
-        columns = columns.sort((a, b) => prop === 'versions'
-          ? compareVersionsDescending(a, b)
-          : a.localeCompare(b))
+    function distinctVersions(data) {
+      const versions = new Set()
+      Object.values(data).forEach(snapshot => {
+        Object.keys(snapshot.versions).forEach(version => versions.add(version))
+      })
+      return versions
+    }
 
-        let table = `<table><thead><tr><th>Date</th>${columns.map(k => `<th>${k || 'unknown'}</th>`).join('')}</thead><tbody>`
-        dates.forEach(date => {
-          table += `<tr><td>${date}</td>
-            ${columns.map(c => data[date][prop][c] || '-').map(v => `<td>${v}</td>`).join('')}
-          </tr>`
-        })
-        table += '</tbody></table>'
-        return table
+    function datesDescending(data) {
+      const dates = Object.keys(data).sort((a, b) => b.localeCompare(a))
+      const { days } = RANGES.find(r => r.id === rangeId)
+      if (!Number.isFinite(days)) return dates
+      const cutoff = new Date(dates[0])
+      cutoff.setDate(cutoff.getDate() - days)
+      const from = cutoff.toISOString().slice(0, 10)
+      return dates.filter(date => date >= from)
+    }
+
+    // Shading is relative to the busiest cell in the same row, i.e. each date's
+    // share of that week's pools, so a migration reads as a moving dark band.
+    // Square root, because a plain ratio leaves everything but the dominant
+    // version or two in the palest step.
+    function heatClass(value, rowMax) {
+      if (!(value > 0) || !(rowMax > 0)) return ''
+      const step = Math.ceil(Math.sqrt(value / rowMax) * HEAT_STEPS)
+      return ` class="tu-heat-${Math.min(Math.max(step, 1), HEAT_STEPS)}"`
+    }
+
+    function historyTable(data, dates, prop) {
+      const seen = new Set()
+      dates.forEach(date => Object.keys(data[date][prop]).forEach(k => seen.add(k)))
+
+      let columns = [...seen].sort((a, b) => prop === 'versions'
+        ? compareVersionsDescending(a, b)
+        : a.localeCompare(b))
+      let folded = []
+      if (prop === 'versions' && !showAllVersions && columns.length > MAX_VERSION_COLUMNS) {
+        // compareVersionsDescending sorts anything that is not a version number
+        // (the "unknown" bucket) last; keep those, they are not versions.
+        const isVersion = key => /^v?\d/i.test(key.trim())
+        const cut = columns.filter(isVersion).slice(MAX_VERSION_COLUMNS)
+        folded = cut
+        columns = columns.filter(key => !cut.includes(key))
       }
 
-      let html = '<h2 id="history">History</h2>'
-      html += tableByDate('Implementations', 'implementations')
-      html += tableByDate('Versions', 'versions')
+      const valueAt = (date, key) => data[date][prop][key] || 0
+      const foldedTotal = date => folded.reduce((sum, key) => sum + valueAt(date, key), 0)
 
-      document.getElementById('history').innerHTML = html
+      const foldedHeader = folded.length
+        ? `<th title="${folded.join(', ')}">older (${folded.length})</th>`
+        : ''
+
+      const row = date => {
+        const values = columns.map(k => valueAt(date, k))
+        if (folded.length) values.push(foldedTotal(date))
+        const rowMax = Math.max(...values)
+        return `<tr><td>${date}</td>` +
+          values.map(v => `<td${heatClass(v, rowMax)}>${v || '-'}</td>`).join('') +
+          `</tr>`
+      }
+
+      return `<table><thead><tr><th>Date</th>` +
+        columns.map(k => `<th>${k || 'unknown'}</th>`).join('') + foldedHeader +
+        `</tr></thead><tbody>` +
+        dates.map(row).join('') +
+        `</tbody></table>`
     }
-    function renderGraphs(data) {
-      const dates = Object.keys(data).sort()
+
+    function historyControls(data) {
+      const total = distinctVersions(data).size
+      const options = RANGES.map(r =>
+        `<option value="${r.id}"${r.id === rangeId ? ' selected' : ''}>${r.label}</option>`).join('')
+      return `<div class="controls">
+        <label>Dates: <select id="history-range">${options}</select></label>
+        <label><input type="checkbox" id="history-all-versions"${showAllVersions ? ' checked' : ''}>
+          show all ${total} versions</label>
+        <span class="hint">Cell shading shows each date's share of pools.</span>
+      </div>`
+    }
+
+    function renderHistory() {
+      const dates = datesDescending(history)
+      document.getElementById('history').innerHTML = `<h2 id="history">History</h2>` +
+        historyControls(history) +
+        `<h3 id="history-implementations">Implementations</h3>` +
+        historyTable(history, dates, 'implementations') +
+        `<h3 id="history-versions">Versions</h3>` +
+        historyTable(history, dates, 'versions')
+
+      document.getElementById('history-range').addEventListener('change', event => {
+        rangeId = event.target.value
+        renderHistory()
+      })
+      document.getElementById('history-all-versions').addEventListener('change', event => {
+        showAllVersions = event.target.checked
+        renderHistory()
+        if (plotly) renderGraphs()
+      })
+
+      enhance(document.getElementById('history'))
+    }
+
+    function renderGraphs() {
+      const dates = Object.keys(history).sort()
       const implementationTraces = [
         ['Generic worker', 'generic-worker'],
         ['Docker worker', 'docker-worker'],
         ['Unknown', '']
       ].map(([name, implementation]) => ({
         x: dates,
-        y: dates.map(date => data[date].implementations[implementation] || 0),
+        y: dates.map(date => history[date].implementations[implementation] || 0),
         name,
         type: 'line',
       }))
 
-      // get unique versions
-      const allVersions = [... new Set(dates.map(date => Object.keys(data[date].versions)).flat())]
-        .sort(compareVersionsDescending)
-      const versionTraces = allVersions.map((version) => ({
+      // get unique versions, most used first
+      const allVersions = [... new Set(dates.map(date => Object.keys(history[date].versions)).flat())]
+      const peak = version => Math.max(...dates.map(date => history[date].versions[version] || 0))
+      const ranked = allVersions.sort((a, b) => peak(b) - peak(a))
+      // A trace per version means a legend of well over a hundred entries, so
+      // only the biggest are charted individually unless asked otherwise.
+      const charted = showAllVersions ? ranked : ranked.slice(0, CHARTED_VERSIONS)
+      const rest = showAllVersions ? [] : ranked.slice(CHARTED_VERSIONS)
+
+      const versionTraces = charted.sort(compareVersionsDescending).map((version) => ({
         x: dates,
-        y: dates.map(date => data[date].versions[version] || 0),
+        y: dates.map(date => history[date].versions[version] || 0),
         name: version,
         type: 'line',
       }))
+      if (rest.length) versionTraces.push({
+        x: dates,
+        y: dates.map(date => rest.reduce((sum, v) => sum + (history[date].versions[v] || 0), 0)),
+        name: `other (${rest.length})`,
+        type: 'line',
+        line: { dash: 'dot', color: '#888' },
+      })
 
       const layout = {
         barmode: 'group',
       }
-      Plotly.newPlot('graph-implementations', implementationTraces, {
+      plotly.newPlot('graph-implementations', implementationTraces, {
         ...layout,
         title: 'Worker Implementations',
       })
-      Plotly.newPlot('graph-versions', versionTraces, {
+      plotly.newPlot('graph-versions', versionTraces, {
         ...layout,
         title: 'Worker Versions',
       })
     }
-    async function loadHistory() {
-      const res = await (await fetch(historyUrl)).json()
-      renderHistoryTables(res)
-      renderGraphs(res)
+
+    // Plotly is over a megabyte, and the charts sit below the tables. Fetch it
+    // only once the graphs are close to being looked at.
+    function loadGraphsWhenVisible() {
+      const graphs = document.getElementById('graphs')
+      const observer = new IntersectionObserver(async (entries) => {
+        if (!entries.some(entry => entry.isIntersecting)) return
+        observer.disconnect()
+        const status = document.getElementById('graph-status')
+        try {
+          await loadScript(plotlyUrl)
+          plotly = window.Plotly
+          status.remove()
+          renderGraphs()
+        } catch (error) {
+          showError(status.parentNode, 'the graphs', error)
+        }
+      }, { rootMargin: '400px' })
+      observer.observe(graphs)
+    }
+
+    function enhance(root) {
+      root.querySelectorAll('table').forEach(makeTableSortable)
+      // sticky headers/first column, row & column hover highlighting, filters
+      enhanceTables(root)
     }
 
     async function init() {
-      await loadReadme()
-      await loadHistory()
+      renderSource()
 
-      // make tables sortable
-      document.querySelectorAll('table').forEach(makeTableSortable);
-
-      // sticky headers/first column + row & column hover highlighting (.tu-* rules above)
-      enhanceTables()
+      // Each stage renders into its own container, so one failure must not
+      // take the rest of the page with it.
+      const stages = [
+        ['the worker pool report', document.getElementById('content'), async () => {
+          await loadReadme()
+          enhance(document.getElementById('content'))
+        }],
+        ['the history data', document.getElementById('history'), async () => {
+          history = await (await fetchOk(historyUrl)).json()
+          renderSourceUpdated(history)
+          renderHistory()
+          loadGraphsWhenVisible()
+        }],
+      ]
+      for (const [what, container, run] of stages) {
+        try {
+          await run()
+        } catch (error) {
+          showError(container, what, error)
+        }
+      }
     }
 
     init()
