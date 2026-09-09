@@ -116,6 +116,23 @@
     if (!basePath.includes('-history')) basePath = '/mozilla-history/'
     const readmeUrl = `https://raw.githubusercontent.com/taskcluster${basePath}master/WorkerVersions/README.md`
     const historyUrl = `${window.location.pathname}history.json`
+    const versionCollator = new Intl.Collator('en', { numeric: true, sensitivity: 'base' })
+
+    function versionSortKey(version) {
+      return version.trim().toLowerCase().replace(/\d+/g, part => part.padStart(12, '0'))
+    }
+
+    function makeTableSortable(table) {
+      const headers = [...table.querySelectorAll('thead th')]
+      headers.forEach((header, column) => {
+        if (header.textContent.trim().toLowerCase() !== 'version') return
+        table.querySelectorAll('tbody tr').forEach(row => {
+          const cell = row.cells[column]
+          if (cell) cell.dataset.sort = versionSortKey(cell.textContent)
+        })
+      })
+      table.classList.add('sortable')
+    }
 
     async function loadReadme() {
       const res = await (await fetch(readmeUrl)).text()
@@ -168,7 +185,8 @@
       }))
 
       // get unique versions
-      const allVersions = [... new Set(dates.map(date => Object.keys(data[date].versions)).flat())].sort()
+      const allVersions = [... new Set(dates.map(date => Object.keys(data[date].versions)).flat())]
+        .sort((a, b) => versionCollator.compare(a, b))
       const versionTraces = allVersions.map((version) => ({
         x: dates,
         y: dates.map(date => data[date].versions[version] || 0),
@@ -199,7 +217,7 @@
       await loadHistory()
 
       // make tables sortable
-      document.querySelectorAll('table').forEach(table => table.classList.add('sortable'));
+      document.querySelectorAll('table').forEach(makeTableSortable);
     }
 
     init()
