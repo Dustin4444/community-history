@@ -70,8 +70,7 @@ REPORT_PREFIX=https://github.com/taskcluster/community-history/blob/master/Worke
 
 # sleep 1h-2h
 
-# Step 2: Collect the audit information and write findings into files
-cd WorkerVersions
+# Step 2: Collect the audit information and write findings into WorkerVersions/
+# Run this from the repository root.
 REPORT_PREFIX=https://github.com/taskcluster/community-history/blob/master/WorkerVersions/ audit-worker-versions "$TaskGroupID" # passing TaskGroupID returned from the first step
 ```
-

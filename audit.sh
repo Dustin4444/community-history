@@ -19,6 +19,8 @@ echo "Sleep 90m"
 sleep 5400
 echo "Generating reports"
 
-cd WorkerVersions
-find . -type f -not -name "workers.json" -delete # remove everything except workers.json
+# audit-worker-versions creates the WorkerVersions directory itself. Remove stale
+# report files, including the legacy nested directory, before generating it.
+find WorkerVersions -type f -not -path "WorkerVersions/workers.json" -delete
+find WorkerVersions -depth -mindepth 1 -type d -empty -delete
 audit-worker-versions "$TASK_GROUP_ID"

@@ -36,17 +36,29 @@ HEREDOC
 # build a revision history for public website
 
 PUBLIC_DIR="./docs"
-WORKERS_FILE="WorkerVersions/workers.json"
+WORKERS_FILES=(
+	"WorkerVersions/workers.json"
+	"WorkerVersions/WorkerVersions/workers.json"
+)
 HISTORICAL_DATA="./${PUBLIC_DIR}/history.json"
 
 mkdir -p "${PUBLIC_DIR}/data/"
 
-# grab all versions by date
-for rev in $(git rev-list master "${WORKERS_FILE}");
+# Grab all versions by date. The nested path contains reports generated between
+# November 2024 and September 2026 due to audit.sh running from the wrong directory.
+for workers_file in "${WORKERS_FILES[@]}";
 do
-	revdate=$(git show --no-patch --no-notes --date=short --pretty='%cd' "$rev")
-	echo "Fetching ${revdate} version ${rev}"
-	git show "${rev}:${WORKERS_FILE}" > "${PUBLIC_DIR}/data/${revdate}.json"
+	while IFS= read -r rev;
+	do
+		if ! git cat-file -e "${rev}:${workers_file}" 2>/dev/null; then
+			echo "Skipping ${rev}: ${workers_file} does not exist"
+			continue
+		fi
+
+		revdate=$(git show --no-patch --no-notes --date=short --pretty='%cd' "$rev")
+		echo "Fetching ${revdate} version ${rev}"
+		git show "${rev}:${workers_file}" > "${PUBLIC_DIR}/data/${revdate}.json"
+	done < <(git rev-list master -- "${workers_file}")
 done
 
 node -e "${nodescript}" "${PWD}" ${PUBLIC_DIR}/data/*.json > $HISTORICAL_DATA
