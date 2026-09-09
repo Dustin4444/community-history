@@ -38,7 +38,8 @@
       background: #fff;
       padding: 15px 25px;
       border: 1px solid #eee;
-      z-index: 1;
+      /* above the sticky table headers/columns from table-utils.js */
+      z-index: 10;
     }
 
     .toc ul {
@@ -71,6 +72,60 @@
       color: #555;
       font-size: 14px;
       width: 70%;
+    }
+
+    /* Big-table helpers, driven by the .tu-* classes table-utils.js adds. */
+
+    /* github-markdown-css renders tables as display:block with overflow:auto,
+       which makes each table its own scroll box and defeats position:sticky.
+       Undoing it keeps the page as the only scroller. */
+    .markdown-body table.tu-sticky {
+      display: table;
+      width: max-content;
+      max-width: none;
+      overflow: visible;
+    }
+
+    /* Sticky cells need an opaque background, and box-shadow borders because
+       collapsed table borders are not painted for sticky cells. */
+    .tu-sticky thead th {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      background-color: #f6f8fa;
+      box-shadow: inset 0 -1px 0 #d0d7de;
+    }
+
+    .tu-sticky tbody td:first-child,
+    .tu-sticky tbody th:first-child {
+      position: sticky;
+      left: 0;
+      z-index: 1;
+      background-color: #fff;
+      box-shadow: inset -1px 0 0 #d0d7de;
+      white-space: nowrap;
+    }
+
+    .tu-sticky thead th:first-child {
+      left: 0;
+      z-index: 3;
+    }
+
+    /* Hovered row and hovered column. Declared after the sticky rules, and
+       with enough specificity, to also win on the frozen first column. */
+    .tu-crosshair tbody tr:hover > td,
+    .tu-crosshair tbody tr:hover > th,
+    .tu-crosshair tbody tr:hover > td:first-child,
+    .tu-crosshair tbody tr:hover > th:first-child,
+    .tu-crosshair td.tu-col,
+    .tu-crosshair td.tu-col:first-child {
+      background-color: #eef4fb;
+    }
+
+    /* The hovered cell itself, and the hovered column's header. */
+    .tu-crosshair tbody td:hover,
+    .tu-crosshair thead th.tu-col {
+      background-color: #dbe8f7;
     }
   </style>
 </head>
@@ -111,6 +166,8 @@
   <script src="https://cdn.jsdelivr.net/gh/tofsjonas/sortable/sortable.min.js"></script>
   <script src="https://cdn.plot.ly/plotly-2.18.0.min.js"></script>
   <script type="module">
+    import { enhanceTables } from './table-utils.js'
+
     // This should work for both https://taskcluster.github.io/community-history/ and https://taskcluster.github.io/mozilla-history/
     let basePath = String(window.location.pathname)
     if (!basePath.includes('-history')) basePath = '/mozilla-history/'
@@ -229,6 +286,9 @@
 
       // make tables sortable
       document.querySelectorAll('table').forEach(makeTableSortable);
+
+      // sticky headers/first column + row & column hover highlighting (.tu-* rules above)
+      enhanceTables()
     }
 
     init()
